@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zot
+  namespace: zot
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: zot
+  template:
+    metadata:
+      labels:
+        app: zot
+    spec:
+      serviceAccountName: zot
+      containers:
+        - name: zot
+          image: ghcr.io/project-zot/zot:latest
+          ports:
+            - containerPort: 5000
+          volumeMounts:
+            - name: config
+              mountPath: /etc/zot
+            - name: htpasswd
+              mountPath: /secret
+            - name: data
+              mountPath: /var/lib/registry
+          livenessProbe:
+            tcpSocket:
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: config
+          configMap:
+            name: zot-config
+        - name: htpasswd
+          secret:
+            secretName: zot-htpasswd
+        - name: data
+          persistentVolumeClaim:
+            claimName: zot
